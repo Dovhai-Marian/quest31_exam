@@ -1,0 +1,70 @@
+#include <windows.h>
+
+#include <iostream>
+
+
+
+int counter = 0;
+
+CRITICAL_SECTION cs;
+
+const int NUM_THREADS = 5, NUM_INCREMENTS = 1000;
+
+
+
+DWORD WINAPI IncrementCounter(LPVOID lpParam) {
+
+    for (int i = 0; i < NUM_INCREMENTS; ++i) {
+
+        EnterCriticalSection(&cs);
+
+        ++counter;
+
+        LeaveCriticalSection(&cs);
+
+    }
+
+    EnterCriticalSection(&cs);
+
+    std::cout << "Thread " << *(int*)lpParam << " Counter: " << counter << std::endl;
+
+    LeaveCriticalSection(&cs);
+
+    return 0;
+
+}
+
+
+
+int main() {
+
+    InitializeCriticalSection(&cs);
+
+    HANDLE threads[NUM_THREADS];
+
+    int ids[NUM_THREADS];
+
+
+
+    for (int i = 0; i < NUM_THREADS; ++i) {
+
+        ids[i] = i + 1;
+
+        threads[i] = CreateThread(NULL, 0, IncrementCounter, &ids[i], 0, NULL);
+
+    }
+
+    WaitForMultipleObjects(NUM_THREADS, threads, TRUE, INFINITE);
+
+    for (auto t : threads) CloseHandle(t);
+
+    DeleteCriticalSection(&cs);
+
+
+
+    std::cout << "Final Counter: " << counter << std::endl;
+
+    return 0;
+
+}
+
